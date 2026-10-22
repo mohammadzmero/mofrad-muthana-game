@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لعبة أبطال المفرد والمثنى والجمع</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts (Cairo & Tajawal) -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800;900&family=Tajawal:wght@500;700;900&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti for victory effects -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            blue: '#2563eb',
+                            purple: '#7c3aed',
+                            pink: '#ec4899',
+                            yellow: '#f59e0b',
+                            green: '#10b981',
+                            bg: '#f0f9ff'
+                        }
+                    },
+                    fontFamily: {
+                        cairo: ['Cairo', 'sans-serif'],
+                        tajawal: ['Tajawal', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Cairo', 'Tajawal', sans-serif;
+            background: linear-gradient(135deg, #e0f2fe 0%, #fef3c7 50%, #f3e8ff 100%);
+            min-height: 100vh;
+            user-select: none;
+        }
+
+        .card-bounce {
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .card-bounce:hover {
+            transform: translateY(-6px) scale(1.02);
+        }
+
+        .btn-action {
+            transition: all 0.2s ease;
+            box-shadow: 0 6px 0 rgba(0, 0, 0, 0.15);
+        }
+        .btn-action:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.15);
+        }
+
+        /* Printable certificate styling */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printable-certificate, #printable-certificate * {
+                visibility: visible;
+            }
+            #printable-certificate {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 20px;
+                box-shadow: none !important;
+                background: white !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen text-slate-800 antialiased">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-white/80 backdrop-blur-md border-b-4 border-amber-400 sticky top-0 z-40 px-4 py-3 shadow-md">
+        <div class="max-w-5xl mx-auto flex flex-wrap justify-between items-center gap-2">
+            <div class="flex items-center gap-3">
+                <div class="bg-amber-400 text-amber-900 w-10 h-10 rounded-2xl flex items-center justify-center font-black text-xl shadow-inner">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-lg sm:text-xl text-blue-700 leading-tight">أبطال المفرد والمثنى والجمع</h1>
+                    <p class="text-xs font-semibold text-slate-500">الصف الثالث الأساسي — لغتنا الجميلة</p>
+                </div>
+            </div>
+
+            <!-- Score & Stars Tracker -->
+            <div id="stats-bar" class="hidden flex items-center gap-4 bg-amber-50 px-4 py-2 rounded-2xl border-2 border-amber-300">
+                <div class="flex items-center gap-1.5 text-amber-600 font-extrabold">
+                    <i class="fa-solid fa-star text-amber-400 text-lg animate-pulse"></i>
+                    <span id="star-count" class="text-lg">0</span>
+                </div>
+                <div class="h-5 w-0.5 bg-amber-300"></div>
+                <div class="flex items-center gap-1.5 text-blue-600 font-extrabold">
+                    <i class="fa-solid fa-trophy text-amber-500 text-lg"></i>
+                    <span><span id="score-count">0</span> ن</span>
+                </div>
+                <div class="h-5 w-0.5 bg-amber-300"></div>
+                <div id="student-tag" class="text-xs font-bold text-slate-700 bg-white px-2 py-1 rounded-lg shadow-sm border"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-5xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
+
+        <!-- SCREEN 0: WELCOME & STUDENT INFO -->
+        <section id="screen-welcome" class="bg-white rounded-3xl p-6 sm:p-10 shadow-xl border-4 border-blue-200 text-center relative overflow-hidden my-auto">
+            <div class="inline-block p-4 bg-amber-100 text-amber-600 rounded-full mb-4 shadow-sm">
+                <i class="fa-solid fa-award text-4xl sm:text-5xl"></i>
+            </div>
+            
+            <h2 class="text-2xl sm:text-4xl font-black text-slate-800 mb-2">أهلاً بكم يا أبطال العربية! 👋</h2>
+            <p class="text-slate-600 text-sm sm:text-base mb-6 font-medium max-w-xl mx-auto">
+                رحلة ممتعة لتعلم واكتشاف قواعد **المفرد والمثنى وجمع المذكر السالم** بطريقة تفاعلية مشوقة!
+            </p>
+
+            <!-- School & Teacher Info Card -->
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-4 mb-6 max-w-md mx-auto text-sm text-slate-700 space-y-1">
+                <div class="font-bold text-blue-900 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-school text-blue-600"></i>
+                    <span>مدرسة ذكور الشهيدين بلال وأشرف الأساسية</span>
+                </div>
+                <div class="text-slate-700 font-bold">
+                    إعداد المعلم: <span class="text-blue-700 font-black">محمد جرار</span>
+                </div>
+            </div>
+
+            <!-- Student Name Input -->
+            <div class="max-w-md mx-auto bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-6 shadow-inner">
+                <label for="student-name-input" class="block font-bold text-slate-700 mb-2 text-right text-sm">
+                    <i class="fa-solid fa-user-pen text-amber-500 ml-1"></i> اكتب اسمك العبقري للبدء:
+                </label>
+                <input type="text" id="student-name-input" placeholder="مثال: أحمد محمود..." 
+                       class="w-full px-4 py-3 rounded-xl border-2 border-blue-300 focus:border-blue-500 focus:outline-none text-center text-lg font-bold text-slate-800 shadow-sm transition">
+                <p id="input-error" class="text-red-500 text-xs font-bold mt-2 hidden">يرجى كتابة اسمك قبل البدء باللعب!</p>
+            </div>
+
+            <button onclick="startGame()" class="btn-action bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xl px-10 py-4 rounded-2xl shadow-lg border-b-4 border-emerald-700 inline-flex items-center gap-3 cursor-pointer">
+                <span>ابدأ التحدي الآن</span>
+                <i class="fa-solid fa-play"></i>
+            </button>
+        </section>
+
+        <!-- SCREEN 1: STAGE 1 - EXPLORATION & LEARNING (EXACTLY 2 STEPS) -->
+        <section id="screen-stage1" class="hidden space-y-6">
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-3">
+                <div>
+                    <span class="bg-blue-100 text-blue-700 text-xs font-black px-3 py-1 rounded-full uppercase">المرحلة الأولى</span>
+                    <h3 class="text-xl font-black text-slate-800 mt-1">مرحلة الاكتشاف والتعرف 🔍</h3>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span id="s1-step-indicator" class="text-xs font-black bg-blue-600 text-white px-3 py-1 rounded-full">الخطوة 1 من 2</span>
+                </div>
+            </div>
+
+            <!-- Stage 1 Container for 2 Steps -->
+            <div id="stage1-content-box" class="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border-4 border-blue-100 min-h-[380px] flex flex-col justify-between">
+                <!-- Step content rendered via JS -->
+            </div>
+
+            <!-- Navigation Controls for Stage 1 -->
+            <div class="flex justify-between items-center pt-2">
+                <button onclick="prevStage1Step()" id="btn-s1-prev" class="btn-action bg-slate-200 text-slate-700 hover:bg-slate-300 px-5 py-2.5 rounded-xl font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-right"></i> الخطوة السابقة
+                </button>
+                
+                <button onclick="nextStage1Step()" id="btn-s1-next" class="btn-action bg-blue-600 hover:bg-blue-700 text-white px-7 py-2.5 rounded-xl font-black flex items-center gap-2">
+                    <span>الخطوة التالية</span>
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- SCREEN 2: STAGE 2 - MULTIPLE CHOICE -->
+        <section id="screen-stage2" class="hidden space-y-6">
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex justify-between items-center">
+                <div>
+                    <span class="bg-purple-100 text-purple-700 text-xs font-black px-3 py-1 rounded-full uppercase">المرحلة الثانية</span>
+                    <h3 class="text-xl font-black text-slate-800 mt-1">اختر الصيغة الصحيحة 🤔</h3>
+                </div>
+                <span id="s2-progress" class="text-sm font-bold text-slate-500">السؤال 1 من 5</span>
+            </div>
+
+            <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border-4 border-purple-100 space-y-6">
+                <div class="text-center">
+                    <div id="s2-icon-box" class="w-20 h-20 bg-purple-50 rounded-2xl mx-auto flex items-center justify-center text-3xl text-purple-600 mb-3 border border-purple-100 shadow-inner"></div>
+                    <h4 id="s2-question-text" class="text-xl sm:text-2xl font-black text-slate-800"></h4>
+                </div>
+
+                <div id="s2-options-grid" class="grid grid-cols-1 sm:grid-cols-3 gap-4"></div>
+                <div id="s2-feedback" class="hidden p-4 rounded-2xl text-center font-bold text-sm transition-all"></div>
+            </div>
+        </section>
+
+        <!-- SCREEN 3: STAGE 3 - TABLE COMPLETION -->
+        <section id="screen-stage3" class="hidden space-y-6">
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex justify-between items-center">
+                <div>
+                    <span class="bg-emerald-100 text-emerald-700 text-xs font-black px-3 py-1 rounded-full uppercase">المرحلة الثالثة</span>
+                    <h3 class="text-xl font-black text-slate-800 mt-1">إكمال جدول المفرد والمثنى والجمع 📊</h3>
+                </div>
+                <span class="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg">اختر الكلمة المناسبة لكل فراغ</span>
+            </div>
+
+            <div class="bg-white rounded-3xl p-4 sm:p-6 shadow-xl border-4 border-emerald-100 overflow-x-auto">
+                <table class="w-full text-center border-collapse min-w-[500px]">
+                    <thead>
+                        <tr class="bg-emerald-500 text-white font-black text-base sm:text-lg">
+                            <th class="p-3 rounded-tr-xl border-r border-emerald-400">المفرد (واحد)</th>
+                            <th class="p-3 border-r border-emerald-400">المثنى (اثنان)</th>
+                            <th class="p-3 rounded-tl-xl">جمع المذكر السالم (مجموعة)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="s3-table-body" class="divide-y divide-slate-200 font-bold text-slate-700 text-sm sm:text-base"></tbody>
+                </table>
+
+                <div class="mt-6 text-center">
+                    <button onclick="checkStage3Answers()" class="btn-action bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-lg px-8 py-3 rounded-2xl shadow-md border-b-4 border-emerald-800 inline-flex items-center gap-2">
+                        <i class="fa-solid fa-check-circle"></i> التحقق من الإجابات
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 4: STAGE 4 - WORD CONVERSION -->
+        <section id="screen-stage4" class="hidden space-y-6">
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex justify-between items-center">
+                <div>
+                    <span class="bg-rose-100 text-rose-700 text-xs font-black px-3 py-1 rounded-full uppercase">المرحلة الرابعة</span>
+                    <h3 class="text-xl font-black text-slate-800 mt-1">تحويل الكلمات 🔄</h3>
+                </div>
+                <span id="s4-progress" class="text-sm font-bold text-slate-500">السؤال 1 من 4</span>
+            </div>
+
+            <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border-4 border-rose-100 text-center space-y-6">
+                <div class="inline-block p-4 bg-rose-50 text-rose-600 rounded-full mb-1">
+                    <i class="fa-solid fa-wand-magic-sparkles text-3xl"></i>
+                </div>
+
+                <h4 id="s4-prompt" class="text-2xl font-black text-slate-800"></h4>
+
+                <div class="max-w-md mx-auto">
+                    <input type="text" id="s4-user-input" placeholder="اكتب الإجابة هنا..." 
+                           class="w-full px-4 py-3 text-center text-xl font-black border-2 border-slate-300 focus:border-rose-500 rounded-2xl focus:outline-none shadow-sm">
+                </div>
+
+                <div id="s4-feedback" class="hidden p-3 rounded-xl font-bold text-sm max-w-md mx-auto"></div>
+
+                <button onclick="checkStage4Answer()" class="btn-action bg-rose-500 hover:bg-rose-600 text-white font-extrabold text-lg px-8 py-3 rounded-2xl shadow-md border-b-4 border-rose-700 inline-flex items-center gap-2">
+                    تأكيد التحويل <i class="fa-solid fa-arrow-left"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- SCREEN 5: STAGE 5 - PICTURE CHALLENGE -->
+        <section id="screen-stage5" class="hidden space-y-6">
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex justify-between items-center">
+                <div>
+                    <span class="bg-amber-100 text-amber-700 text-xs font-black px-3 py-1 rounded-full uppercase">المرحلة الخامسة والأخيرة</span>
+                    <h3 class="text-xl font-black text-slate-800 mt-1">تحدي الصور والأعداد 📸</h3>
+                </div>
+                <span id="s5-progress" class="text-sm font-bold text-slate-500">التحدي 1 من 4</span>
+            </div>
+
+            <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border-4 border-amber-100 text-center space-y-6">
+                <div class="bg-gradient-to-b from-amber-50 to-orange-50 rounded-2xl p-6 border-2 border-amber-200 max-w-md mx-auto min-h-[160px] flex flex-col items-center justify-center gap-3">
+                    <div id="s5-visual-icons" class="flex flex-wrap justify-center items-center gap-4 text-4xl sm:text-5xl text-amber-600"></div>
+                    <span id="s5-visual-count" class="bg-amber-200 text-amber-900 text-xs font-black px-3 py-1 rounded-full"></span>
+                </div>
+
+                <h4 class="text-xl font-black text-slate-800">اختر الكلمة المطابقة لعدد الأشخاص في الصورة:</h4>
+
+                <div id="s5-options" class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-xl mx-auto"></div>
+                <div id="s5-feedback" class="hidden p-3 rounded-xl font-bold text-sm max-w-md mx-auto"></div>
+            </div>
+        </section>
+
+        <!-- SCREEN 6: CERTIFICATE & FINAL SCORE -->
+        <section id="screen-certificate" class="hidden space-y-6 my-auto">
+            <div id="printable-certificate" class="bg-white rounded-3xl p-6 sm:p-10 shadow-2xl border-8 border-amber-400 relative overflow-hidden text-center max-w-3xl mx-auto">
+                <div class="flex justify-between items-center border-b-2 border-amber-200 pb-4 mb-6">
+                    <div class="text-right">
+                        <p class="text-xs font-bold text-slate-500">دولة فلسطين</p>
+                        <p class="text-xs font-bold text-slate-700">مدرسة ذكور الشهيدين بلال وأشرف الأساسية</p>
+                    </div>
+                    <div class="text-center">
+                        <i class="fa-solid fa-medal text-amber-500 text-4xl"></i>
+                    </div>
+                    <div class="text-left">
+                        <p class="text-xs font-bold text-slate-500">مادة اللغة العربية</p>
+                        <p class="text-xs font-bold text-slate-700">الصف الثالث الأساسي</p>
+                    </div>
+                </div>
+
+                <h2 class="text-3xl sm:text-4xl font-black text-amber-600 mb-2">🏆 شهادة إنجاز وتفوق 🏆</h2>
+                <p class="text-slate-600 font-bold mb-6 text-sm">تشهد إدارة المدرسة بأن البطل العبقري:</p>
+
+                <div class="bg-amber-50 border-2 border-dashed border-amber-300 rounded-2xl py-3 px-6 inline-block mb-6">
+                    <h3 id="cert-student-name" class="text-2xl sm:text-3xl font-black text-blue-900"></h3>
+                </div>
+
+                <p class="text-slate-700 text-base sm:text-lg leading-relaxed mb-6 font-medium max-w-xl mx-auto">
+                    قد أتمّ بنجاح واقتدار لعبة <span class="font-bold text-blue-700">«أبطال المفرد والمثنى والجمع»</span>، وأتقن التحويل بين المفرد والمثنى وجمع المذكر السالم بكفاءة عالية.
+                </p>
+
+                <div class="grid grid-cols-2 gap-4 max-w-md mx-auto bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-8">
+                    <div class="text-center">
+                        <span class="block text-xs font-bold text-slate-500">النقاط المحققة</span>
+                        <span id="cert-score" class="text-2xl font-black text-blue-600">0</span>
+                    </div>
+                    <div class="text-center">
+                        <span class="block text-xs font-bold text-slate-500">النجوم المكتسبة</span>
+                        <div class="flex justify-center items-center gap-1 text-amber-400 text-xl font-black mt-1">
+                            <i class="fa-solid fa-star"></i>
+                            <span id="cert-stars" class="text-slate-800 text-2xl">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-end pt-4 border-t border-slate-200 text-xs sm:text-sm font-bold text-slate-600">
+                    <div class="text-right">
+                        <p>إعداد المعلم:</p>
+                        <p class="text-blue-900 font-black text-base mt-1">محمد جرار</p>
+                    </div>
+                    <div class="text-left">
+                        <p>ختم المدرسة:</p>
+                        <div class="w-20 h-20 border-2 border-amber-400 rounded-full flex items-center justify-center text-[10px] text-amber-700 font-black rotate-12 mt-1">
+                            مدرسة الشهيدين
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap justify-center gap-4 no-print pt-4">
+                <button onclick="window.print()" class="btn-action bg-blue-600 hover:bg-blue-700 text-white font-black px-8 py-3.5 rounded-2xl shadow-md border-b-4 border-blue-800 inline-flex items-center gap-2">
+                    <i class="fa-solid fa-print"></i> طباعة الشهادة
+                </button>
+                <button onclick="restartGame()" class="btn-action bg-emerald-600 hover:bg-emerald-700 text-white font-black px-8 py-3.5 rounded-2xl shadow-md border-b-4 border-emerald-800 inline-flex items-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i> اللعب من جديد
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs font-bold text-slate-600 no-print mt-auto">
+        مدرسة ذكور الشهيدين بلال وأشرف الأساسية — إعداد المعلم: <span class="text-blue-700 font-black">محمد جرار</span>
+    </footer>
+
+    <!-- GAME LOGIC JAVASCRIPT -->
+    <script>
+        // MASTER WORD DATABASE (10 APPROVED WORDS)
+        const WORD_DATABASE = [
+            { singular: 'مزارع', dual: 'مزارعان', plural: 'مزارعون', icon: 'fa-wheat-awn' },
+            { singular: 'معلم', dual: 'معلمان', plural: 'معلمون', icon: 'fa-chalkboard-user' },
+            { singular: 'مهندس', dual: 'مهندسان', plural: 'مهندسون', icon: 'fa-compass-drafting' },
+            { singular: 'لاعب', dual: 'لاعبان', plural: 'لاعبون', icon: 'fa-futbol' },
+            { singular: 'مسلم', dual: 'مسلمان', plural: 'مسلمون', icon: 'fa-kaaba' },
+            { singular: 'مجتهد', dual: 'مجتهدان', plural: 'مجتهدون', icon: 'fa-book-open-reader' },
+            { singular: 'مسافر', dual: 'مسافران', plural: 'مسافرون', icon: 'fa-plane-departure' },
+            { singular: 'عامل', dual: 'عاملان', plural: 'عاملون', icon: 'fa-helmet-safety' },
+            { singular: 'فائز', dual: 'فائزان', plural: 'فائزون', icon: 'fa-trophy' },
+            { singular: 'نشيط', dual: 'نشيطان', plural: 'نشيطون', icon: 'fa-bolt' }
+        ];
+
+        // GAME STATE
+        let studentName = '';
+        let score = 0;
+        let stars = 0;
+
+        // Audio Effects
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'correct') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.3);
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 0.3);
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                } else if (type === 'star') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(1174.66, audioCtx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.2);
+                }
+            } catch (e) {}
+        }
+
+        function startGame() {
+            const input = document.getElementById('student-name-input');
+            const name = input.value.trim();
+
+            if (!name) {
+                document.getElementById('input-error').classList.remove('hidden');
+                return;
+            }
+
+            document.getElementById('input-error').classList.add('hidden');
+            studentName = name;
+            score = 0;
+            stars = 0;
+            updateStatsUI();
+
+            document.getElementById('student-tag').textContent = `البطل: ${studentName}`;
+            document.getElementById('stats-bar').classList.remove('hidden');
+
+            goToStage(1);
+        }
+
+        function updateStatsUI() {
+            document.getElementById('score-count').textContent = score;
+            document.getElementById('star-count').textContent = stars;
+        }
+
+        function addPoints(pts, starInc = 1) {
+            score += pts;
+            stars += starInc;
+            updateStatsUI();
+            playSound('star');
+        }
+
+        function goToStage(stageNum) {
+            ['screen-welcome', 'screen-stage1', 'screen-stage2', 'screen-stage3', 'screen-stage4', 'screen-stage5', 'screen-certificate'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+
+            if (stageNum === 1) {
+                document.getElementById('screen-stage1').classList.remove('hidden');
+                initStage1();
+            } else if (stageNum === 2) {
+                document.getElementById('screen-stage2').classList.remove('hidden');
+                initStage2();
+            } else if (stageNum === 3) {
+                document.getElementById('screen-stage3').classList.remove('hidden');
+                initStage3();
+            } else if (stageNum === 4) {
+                document.getElementById('screen-stage4').classList.remove('hidden');
+                initStage4();
+            } else if (stageNum === 5) {
+                document.getElementById('screen-stage5').classList.remove('hidden');
+                initStage5();
+            } else if (stageNum === 6) {
+                document.getElementById('screen-certificate').classList.remove('hidden');
+                renderCertificate();
+            }
+        }
+
+        // ==========================================
+        // STAGE 1: DISCOVERY (EXACTLY 2 STEPS)
+        // ==========================================
+        let s1Step = 1;
+
+        function initStage1() {
+            s1Step = 1;
+            renderStage1Step();
+        }
+
+        function renderStage1Step() {
+            const box = document.getElementById('stage1-content-box');
+            document.getElementById('s1-step-indicator').textContent = `الخطوة ${s1Step} من 2`;
+
+            if (s1Step === 1) {
+                // STEP 1: Core Rules
+                box.innerHTML = `
+                    <div class="text-center space-y-4">
+                        <div class="inline-block p-3 bg-blue-100 text-blue-600 rounded-full">
+                            <i class="fa-solid fa-lightbulb text-3xl"></i>
+                        </div>
+                        <h4 class="text-2xl font-black text-slate-800">قاعدة التحويل البسيطة 💡</h4>
+                        <p class="text-slate-600 font-bold text-sm sm:text-base max-w-xl mx-auto">
+                            تعلم كيف تحول أي اسم مفرد مذكّر بكل سهولة:
+                        </p>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 my-6">
+                            <div class="bg-sky-50 border-2 border-sky-200 rounded-2xl p-4 text-center card-bounce">
+                                <span class="text-xs font-bold text-sky-600 bg-sky-100 px-3 py-1 rounded-full">1. المفرد</span>
+                                <div class="my-3 text-3xl text-sky-500"><i class="fa-solid fa-user"></i></div>
+                                <p class="text-xl font-black text-sky-900">يدل على واحد</p>
+                                <span class="text-xs text-sky-700 font-bold block mt-1">مثال: مزارع</span>
+                            </div>
+
+                            <div class="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-4 text-center card-bounce">
+                                <span class="text-xs font-bold text-indigo-600 bg-indigo-100 px-3 py-1 rounded-full">2. المثنى</span>
+                                <div class="my-3 text-3xl text-indigo-500 flex justify-center gap-1"><i class="fa-solid fa-user"></i><i class="fa-solid fa-user"></i></div>
+                                <p class="text-xl font-black text-indigo-900">نضيف (ان) للمفرد</p>
+                                <span class="text-xs text-indigo-700 font-bold block mt-1">مزارع ← مزارعـان</span>
+                            </div>
+
+                            <div class="bg-purple-50 border-2 border-purple-200 rounded-2xl p-4 text-center card-bounce">
+                                <span class="text-xs font-bold text-purple-600 bg-purple-100 px-3 py-1 rounded-full">3. جمع المذكر السالم</span>
+                                <div class="my-3 text-2xl text-purple-500 flex justify-center gap-1"><i class="fa-solid fa-user"></i><i class="fa-solid fa-user"></i><i class="fa-solid fa-user"></i></div>
+                                <p class="text-xl font-black text-purple-900">نضيف (ون) للمفرد</p>
+                                <span class="text-xs text-purple-700 font-bold block mt-1">مزارع ← مزارعـون</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('btn-s1-prev').style.opacity = '0.5';
+                document.getElementById('btn-s1-next').innerHTML = `<span>الخطوة التالية (الأمثلة)</span> <i class="fa-solid fa-arrow-left"></i>`;
+            } else {
+                // STEP 2: Practical Card Examples
+                box.innerHTML = `
+                    <div class="text-center space-y-4">
+                        <div class="inline-block p-3 bg-amber-100 text-amber-600 rounded-full">
+                            <i class="fa-solid fa-book-open text-3xl"></i>
+                        </div>
+                        <h4 class="text-2xl font-black text-slate-800">بطاقات توضيحية سريعة 📝</h4>
+                        <p class="text-slate-600 font-bold text-sm max-w-xl mx-auto">
+                            لاحظ حركة التحويل في الأمثلة التالية قبل البدء بالمسابقة:
+                        </p>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-4 max-w-2xl mx-auto text-right">
+                            <div class="bg-amber-50 border-2 border-amber-200 p-4 rounded-2xl flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="text-amber-600 text-2xl"><i class="fa-solid fa-chalkboard-user"></i></div>
+                                    <div>
+                                        <p class="font-black text-slate-800">معلم</p>
+                                        <p class="text-xs font-bold text-slate-500">مفرد</p>
+                                    </div>
+                                </div>
+                                <div class="text-left font-black text-sm text-blue-700">
+                                    معلمان ← معلمون
+                                </div>
+                            </div>
+
+                            <div class="bg-emerald-50 border-2 border-emerald-200 p-4 rounded-2xl flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="text-emerald-600 text-2xl"><i class="fa-solid fa-compass-drafting"></i></div>
+                                    <div>
+                                        <p class="font-black text-slate-800">مهندس</p>
+                                        <p class="text-xs font-bold text-slate-500">مفرد</p>
+                                    </div>
+                                </div>
+                                <div class="text-left font-black text-sm text-emerald-700">
+                                    مهندسان ← مهندسون
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-50 border border-blue-200 p-3 rounded-xl text-xs font-bold text-blue-900 inline-block">
+                            هل أنت جاهز للانتقال للأسئلة والتحديات؟ 🚀
+                        </div>
+                    </div>
+                `;
+                document.getElementById('btn-s1-prev').style.opacity = '1';
+                document.getElementById('btn-s1-next').innerHTML = `<span>الانتقال للمرحلة الثانية</span> <i class="fa-solid fa-forward"></i>`;
+            }
+        }
+
+        function nextStage1Step() {
+            if (s1Step === 1) {
+                s1Step = 2;
+                renderStage1Step();
+            } else {
+                goToStage(2);
+            }
+        }
+
+        function prevStage1Step() {
+            if (s1Step === 2) {
+                s1Step = 1;
+                renderStage1Step();
+            }
+        }
+
+        // ==========================================
+        // STAGE 2: MULTIPLE CHOICE
+        // ==========================================
+        const stage2Questions = [
+            { word: WORD_DATABASE[0], targetType: 'dual', question: 'ما هو المثنى الصحيح لكلمة (مزارع)؟', options: ['مزارعان', 'مزارعون', 'مزارعات'], correct: 0 },
+            { word: WORD_DATABASE[1], targetType: 'plural', question: 'ما هو جمع المذكر السالم الصحيح لكلمة (معلم)؟', options: ['معلمان', 'معلمون', 'معلمات'], correct: 1 },
+            { word: WORD_DATABASE[2], targetType: 'dual', question: 'اختر المثنى المناسب لكلمة (مهندس):', options: ['مهندسون', 'مهندسان', 'مهندسات'], correct: 1 },
+            { word: WORD_DATABASE[3], targetType: 'plural', question: 'ما هو الجمع المذكر السالم لكلمة (لاعب)؟', options: ['لاعبون', 'لاعبان', 'لاعبات'], correct: 0 },
+            { word: WORD_DATABASE[5], targetType: 'dual', question: 'ما هو المثنى لكلمة (مجتهد)؟', options: ['مجتهدون', 'مجتهدات', 'مجتهدان'], correct: 2 }
+        ];
+
+        let s2Current = 0;
+
+        function initStage2() {
+            s2Current = 0;
+            renderStage2Question();
+        }
+
+        function renderStage2Question() {
+            const q = stage2Questions[s2Current];
+            document.getElementById('s2-progress').textContent = `السؤال ${s2Current + 1} من ${stage2Questions.length}`;
+            document.getElementById('s2-icon-box').innerHTML = `<i class="fa-solid ${q.word.icon}"></i>`;
+            document.getElementById('s2-question-text').textContent = q.question;
+
+            const optionsGrid = document.getElementById('s2-options-grid');
+            optionsGrid.innerHTML = '';
+            
+            const feedback = document.getElementById('s2-feedback');
+            feedback.classList.add('hidden');
+
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `btn-action bg-slate-50 hover:bg-purple-50 border-2 border-slate-200 hover:border-purple-300 rounded-2xl p-5 text-xl font-black text-slate-800 shadow-sm cursor-pointer transition`;
+                btn.textContent = opt;
+                btn.onclick = () => handleStage2Answer(idx, q.correct, q);
+                optionsGrid.appendChild(btn);
+            });
+        }
+
+        function handleStage2Answer(selectedIndex, correctIndex, q) {
+            const feedback = document.getElementById('s2-feedback');
+            feedback.classList.remove('hidden');
+
+            if (selectedIndex === correctIndex) {
+                playSound('correct');
+                addPoints(10, 1);
+                feedback.className = 'p-4 rounded-2xl text-center font-bold text-sm bg-emerald-100 text-emerald-800 border border-emerald-300';
+                feedback.innerHTML = `إجابة رائعة وصحيحة! 🎉 أحسنت يا بطل!`;
+
+                setTimeout(() => {
+                    s2Current++;
+                    if (s2Current < stage2Questions.length) {
+                        renderStage2Question();
+                    } else {
+                        goToStage(3);
+                    }
+                }, 1200);
+            } else {
+                playSound('wrong');
+                feedback.className = 'p-4 rounded-2xl text-center font-bold text-sm bg-rose-100 text-rose-800 border border-rose-300';
+                const correctWord = q.options[correctIndex];
+                let tip = q.targetType === 'dual' ? 'المثنى ينتهي بـ (ان)' : 'جمع المذكر السالم ينتهي بـ (ون)';
+                feedback.innerHTML = `إجابة غير صحيحة ❌. الإجابة الصحيحة هي: <span class="font-black text-rose-900 underline">${correctWord}</span> (${tip}).`;
+            }
+        }
+
+        // ==========================================
+        // STAGE 3: TABLE FILLING
+        // ==========================================
+        const s3Words = [WORD_DATABASE[4], WORD_DATABASE[6], WORD_DATABASE[7]]; // مسلم, مسافر, عامل
+
+        function initStage3() {
+            const tbody = document.getElementById('s3-table-body');
+            tbody.innerHTML = '';
+
+            s3Words.forEach((item, index) => {
+                const row = document.createElement('tr');
+                row.className = index % 2 === 0 ? 'bg-white' : 'bg-slate-50';
+
+                row.innerHTML = `
+                    <td class="p-3 font-black text-slate-800 border-b border-slate-200">${item.singular}</td>
+                    <td class="p-3 border-b border-slate-200">
+                        <select id="s3-select-dual-${index}" class="w-full p-2 bg-white border-2 border-slate-300 rounded-xl font-bold text-slate-800 text-center focus:border-emerald-500 focus:outline-none">
+                            <option value="">-- اختر المثنى --</option>
+                            <option value="${item.dual}">${item.dual}</option>
+                            <option value="${item.plural}">${item.plural}</option>
+                            <option value="${item.singular}">${item.singular}</option>
+                        </select>
+                    </td>
+                    <td class="p-3 border-b border-slate-200">
+                        <select id="s3-select-plural-${index}" class="w-full p-2 bg-white border-2 border-slate-300 rounded-xl font-bold text-slate-800 text-center focus:border-emerald-500 focus:outline-none">
+                            <option value="">-- اختر الجمع --</option>
+                            <option value="${item.plural}">${item.plural}</option>
+                            <option value="${item.dual}">${item.dual}</option>
+                            <option value="${item.singular}">${item.singular}</option>
+                        </select>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function checkStage3Answers() {
+            let allCorrect = true;
+
+            s3Words.forEach((item, index) => {
+                const dualSel = document.getElementById(`s3-select-dual-${index}`);
+                const pluralSel = document.getElementById(`s3-select-plural-${index}`);
+
+                if (dualSel.value === item.dual) {
+                    dualSel.className = 'w-full p-2 bg-emerald-100 border-2 border-emerald-500 rounded-xl font-bold text-emerald-900 text-center';
+                } else {
+                    dualSel.className = 'w-full p-2 bg-rose-100 border-2 border-rose-500 rounded-xl font-bold text-rose-900 text-center';
+                    allCorrect = false;
+                }
+
+                if (pluralSel.value === item.plural) {
+                    pluralSel.className = 'w-full p-2 bg-emerald-100 border-2 border-emerald-500 rounded-xl font-bold text-emerald-900 text-center';
+                } else {
+                    pluralSel.className = 'w-full p-2 bg-rose-100 border-2 border-rose-500 rounded-xl font-bold text-rose-900 text-center';
+                    allCorrect = false;
+                }
+            });
+
+            if (allCorrect) {
+                playSound('correct');
+                addPoints(20, 2);
+                setTimeout(() => {
+                    goToStage(4);
+                }, 1000);
+            } else {
+                playSound('wrong');
+            }
+        }
+
+        // ==========================================
+        // STAGE 4: WORD CONVERSION
+        // ==========================================
+        const stage4Questions = [
+            { prompt: 'حوّل كلمة (فائز) إلى المثنى:', answer: 'فائزان' },
+            { prompt: 'حوّل كلمة (نشيط) إلى جمع المذكر السالم:', answer: 'نشيطون' },
+            { prompt: 'حوّل كلمة (مزارع) إلى جمع المذكر السالم:', answer: 'مزارعون' },
+            { prompt: 'حوّل كلمة (عامل) إلى المثنى:', answer: 'عاملان' }
+        ];
+
+        let s4Current = 0;
+
+        function initStage4() {
+            s4Current = 0;
+            renderStage4Question();
+        }
+
+        function renderStage4Question() {
+            const q = stage4Questions[s4Current];
+            document.getElementById('s4-progress').textContent = `السؤال ${s4Current + 1} من ${stage4Questions.length}`;
+            document.getElementById('s4-prompt').textContent = q.prompt;
+            const input = document.getElementById('s4-user-input');
+            input.value = '';
+            input.focus();
+
+            const feedback = document.getElementById('s4-feedback');
+            feedback.classList.add('hidden');
+        }
+
+        function checkStage4Answer() {
+            const q = stage4Questions[s4Current];
+            const userAns = document.getElementById('s4-user-input').value.trim();
+            const feedback = document.getElementById('s4-feedback');
+            feedback.classList.remove('hidden');
+
+            if (userAns === q.answer) {
+                playSound('correct');
+                addPoints(10, 1);
+                feedback.className = 'p-3 rounded-xl font-bold text-sm bg-emerald-100 text-emerald-800 border border-emerald-300 max-w-md mx-auto';
+                feedback.textContent = 'إجابة نموذجية ممتازة! 🌟';
+
+                setTimeout(() => {
+                    s4Current++;
+                    if (s4Current < stage4Questions.length) {
+                        renderStage4Question();
+                    } else {
+                        goToStage(5);
+                    }
+                }, 1000);
+            } else {
+                playSound('wrong');
+                feedback.className = 'p-3 rounded-xl font-bold text-sm bg-rose-100 text-rose-800 border border-rose-300 max-w-md mx-auto';
+                feedback.textContent = `حاول مرة أخرى! الإجابة الصحيحة هي: (${q.answer})`;
+            }
+        }
+
+        // ==========================================
+        // STAGE 5: PICTURE CHALLENGE
+        // ==========================================
+        const stage5Questions = [
+            { item: WORD_DATABASE[3], count: 2, countLabel: 'شخصان (2)', target: 'dual', options: ['لاعب', 'لاعبان', 'لاعبون'], correct: 1 },
+            { item: WORD_DATABASE[8], count: 3, countLabel: 'مجموعة (3)', target: 'plural', options: ['فائزان', 'فائز', 'فائزون'], correct: 2 },
+            { item: WORD_DATABASE[1], count: 1, countLabel: 'شخص واحد (1)', target: 'singular', options: ['معلم', 'معلمان', 'معلمون'], correct: 0 },
+            { item: WORD_DATABASE[2], count: 3, countLabel: 'مجموعة (3)', target: 'plural', options: ['مهندسان', 'مهندسون', 'مهندس'], correct: 1 }
+        ];
+
+        let s5Current = 0;
+
+        function initStage5() {
+            s5Current = 0;
+            renderStage5Question();
+        }
+
+        function renderStage5Question() {
+            const q = stage5Questions[s5Current];
+            document.getElementById('s5-progress').textContent = `التحدي ${s5Current + 1} من ${stage5Questions.length}`;
+            document.getElementById('s5-visual-count').textContent = q.countLabel;
+
+            const iconBox = document.getElementById('s5-visual-icons');
+            iconBox.innerHTML = '';
+            for (let i = 0; i < q.count; i++) {
+                iconBox.innerHTML += `<i class="fa-solid ${q.item.icon}"></i>`;
+            }
+
+            const optionsBox = document.getElementById('s5-options');
+            optionsBox.innerHTML = '';
+
+            const feedback = document.getElementById('s5-feedback');
+            feedback.classList.add('hidden');
+
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `btn-action bg-white hover:bg-amber-50 border-2 border-amber-200 hover:border-amber-400 rounded-2xl p-4 text-xl font-black text-slate-800 shadow-sm cursor-pointer transition`;
+                btn.textContent = opt;
+                btn.onclick = () => handleStage5Answer(idx, q.correct, q);
+                optionsBox.appendChild(btn);
+            });
+        }
+
+        function handleStage5Answer(selectedIdx, correctIdx, q) {
+            const feedback = document.getElementById('s5-feedback');
+            feedback.classList.remove('hidden');
+
+            if (selectedIdx === correctIdx) {
+                playSound('correct');
+                addPoints(15, 1);
+                feedback.className = 'p-3 rounded-xl font-bold text-sm bg-emerald-100 text-emerald-800 border border-emerald-300 max-w-md mx-auto';
+                feedback.textContent = 'رائع جداً! إجابة دقيقة وصحيحة 🎯';
+
+                setTimeout(() => {
+                    s5Current++;
+                    if (s5Current < stage5Questions.length) {
+                        renderStage5Question();
+                    } else {
+                        goToStage(6);
+                    }
+                }, 1000);
+            } else {
+                playSound('wrong');
+                feedback.className = 'p-3 rounded-xl font-bold text-sm bg-rose-100 text-rose-800 border border-rose-300 max-w-md mx-auto';
+                feedback.textContent = `إجابة خاطئة! الكلمة المناسبة هي: (${q.options[correctIdx]})`;
+            }
+        }
+
+        // ==========================================
+        // CERTIFICATE & FINAL RENDER
+        // ==========================================
+        function renderCertificate() {
+            document.getElementById('cert-student-name').textContent = studentName;
+            document.getElementById('cert-score').textContent = score;
+            document.getElementById('cert-stars').textContent = stars;
+
+            try {
+                confetti({
+                    particleCount: 120,
+                    spread: 80,
+                    origin: { y: 0.6 }
+                });
+            } catch (e) {}
+        }
+
+        function restartGame() {
+            document.getElementById('stats-bar').classList.add('hidden');
+            document.getElementById('student-name-input').value = '';
+            goToStage(1);
+            document.getElementById('screen-stage1').classList.add('hidden');
+            document.getElementById('screen-welcome').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
